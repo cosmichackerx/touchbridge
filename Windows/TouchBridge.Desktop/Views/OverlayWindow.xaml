@@ -1,0 +1,153 @@
+<Window x:Class="TouchBridge.Desktop.Views.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="clr-namespace:TouchBridge.Desktop.Converters"
+        Title="TouchBridge"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="True"
+        ResizeMode="NoResize"
+        WindowStartupLocation="Manual"
+        Left="0" Top="0"
+        MouseEnter="OnBarMouseEnter"
+        MouseLeave="OnBarMouseLeave">
+    <Window.Resources>
+        <conv:HexToBrushConverter x:Key="HexToBrush"/>
+        <conv:ModeEqualsConverter x:Key="ModeEquals"/>
+        <Style x:Key="BarButton" TargetType="Button">
+            <Setter Property="Background" Value="#33FFFFFF"/>
+            <Setter Property="Foreground" Value="#E8E8F0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Margin" Value="4,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#55FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ModePill" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#B0B0C0"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" Background="#22FFFFFF" CornerRadius="12"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#4F8EF7"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#44FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ExitButton" TargetType="Button" BasedOn="{StaticResource BarButton}">
+            <Setter Property="Background" Value="#44F87171"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <!-- Transparent click-through region (rest of desktop) -->
+        <Border Background="Transparent" VerticalAlignment="Stretch"/>
+
+        <!-- Top system app bar -->
+        <Border x:Name="TopBar"
+                VerticalAlignment="Top"
+                Height="48"
+                Background="#E81E1E2E"
+                BorderBrush="#334F8EF7"
+                BorderThickness="0,0,0,1"
+                MouseEnter="OnBarMouseEnter">
+            <Grid Margin="12,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Logo -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <Border Background="#4F8EF7" CornerRadius="14" Width="28" Height="28">
+                        <TextBlock Text="TB" Foreground="White" FontWeight="Bold" FontSize="11"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="TouchBridge" Foreground="#E8E8F0" FontSize="13" FontWeight="SemiBold"
+                               VerticalAlignment="Center" Margin="8,0,0,0"/>
+                </StackPanel>
+
+                <!-- Status -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
+                    <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center"
+                             Fill="{Binding StatusBrush, Converter={StaticResource HexToBrush}}"/>
+                    <TextBlock Text="{Binding StatusText}" Foreground="#C0C0D0" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Mode switcher -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <RadioButton Content="Trackpad" GroupName="Mode" Style="{StaticResource ModePill}"
+                                 IsChecked="{Binding SelectedMode, Converter={StaticResource ModeEquals}, ConverterParameter=Trackpad}"
+                                 Command="{Binding SetModeCommand}" CommandParameter="Trackpad"/>
+                    <RadioButton Content="Presentation" GroupName="Mode" Style="{StaticResource ModePill}"
+                                 IsChecked="{Binding SelectedMode, Converter={StaticResource ModeEquals}, ConverterParameter=Presentation}"
+                                 Command="{Binding SetModeCommand}" CommandParameter="Presentation"/>
+                    <RadioButton Content="Media" GroupName="Mode" Style="{StaticResource ModePill}"
+                                 IsChecked="{Binding SelectedMode, Converter={StaticResource ModeEquals}, ConverterParameter=Media}"
+                                 Command="{Binding SetModeCommand}" CommandParameter="Media"/>
+                    <RadioButton Content="Gamepad" GroupName="Mode" Style="{StaticResource ModePill}"
+                                 IsChecked="{Binding SelectedMode, Converter={StaticResource ModeEquals}, ConverterParameter=Gamepad}"
+                                 Command="{Binding SetModeCommand}" CommandParameter="Gamepad"/>
+                </StackPanel>
+
+                <!-- PIN -->
+                <Button Grid.Column="3" Style="{StaticResource BarButton}"
+                        Content="{Binding PinText}" Command="{Binding TogglePinCommand}"
+                        VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                <!-- Refresh PIN -->
+                <Button Grid.Column="4" Style="{StaticResource BarButton}" Content="↻"
+                        Command="{Binding RefreshPinCommand}" VerticalAlignment="Center" Margin="0,0,8,0"
+                        ToolTip="New PIN"/>
+
+                <!-- Exit -->
+                <Button Grid.Column="5" Style="{StaticResource ExitButton}" Content="✕ Exit"
+                        Command="{Binding ExitCommand}" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Collapsed edge strip (shown when bar auto-hides) -->
+        <Border x:Name="CollapsedEdge"
+                VerticalAlignment="Top" Height="6"
+                Background="#4F8EF7" Opacity="0.7"
+                Visibility="Collapsed"
+                MouseEnter="OnBarMouseEnter"/>
+    </Grid>
+</Window>

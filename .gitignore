@@ -1,0 +1,36 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# .NET / Windows
+Windows/**/bin/
+Windows/**/obj/
+Windows/**/.vs/
+
+# Android / Gradle
+Android/.gradle/
+Android/build/
+Android/app/build/
+Android/local.properties
+Android/.cxx/
+Android/captures/
+Android/*.apk
+Android/*.aab
+Android/*.keystore
+Android/*.jks
+
+# Secrets — never commit
+.env
+*.pem
+credentials.json
+secrets.properties
