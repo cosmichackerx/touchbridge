@@ -61,7 +61,7 @@ jobs:
 
   release-on-tag:
     name: Publish GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: build-apk
     runs-on: ubuntu-latest
     permissions:
