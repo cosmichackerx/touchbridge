@@ -40,10 +40,12 @@ Output: `TouchBridge.Desktop/bin/Release/net10.0-windows/win-x64/publish/TouchBr
 ## Usage
 
 1. Launch TouchBridge — a slim bar appears at the top of your screen.
-2. Note the **PIN** shown in the bar.
-3. On your phone, open TouchBridge Mobile, discover this PC, enter the PIN, connect.
-4. Move finger on the phone → cursor moves on PC; tap → click; type with phone keyboard.
-5. Click **Exit** in the bar to shut down.
+2. Note the **PIN** shown in the bar (and **Remote** ngrok host if tunnel is running).
+3. On your phone, open TouchBridge Mobile, discover this PC (or paste ngrok host), enter the PIN, connect.
+4. Use touchpad, keyboard, or mouse mode on the phone to control the PC.
+5. Open **Settings** (gear) for ngrok domain, encryption passphrase, and keyboard theme.
+6. Minimize to **system tray** to keep the server running with the overlay hidden.
+7. Click **Exit** in the bar to shut down.
 
 ## Overlay behavior
 
@@ -84,15 +86,25 @@ Connection status is also written to `%LOCALAPPDATA%\TouchBridge\status.json` fo
 
 **Security note:** The ngrok URL is public. Anyone who has the URL and PIN can control your PC while TouchBridge is running. Keep the PIN private and exit TouchBridge when done.
 
+## Settings
+
+| Setting | Purpose |
+|---------|---------|
+| ngrok domain | Fixed subdomain for remote access |
+| Encryption passphrase | Enables E2E AES-256-GCM on the WebSocket channel |
+| Keyboard theme | Pushed to the phone when connected (Dark, Neon, RGB, etc.) |
+
 ## Project structure
 
 ```
 TouchBridge.Desktop/
-  Core/         AppState, protocol constants
-  Interop/      Win32 click-through + SendInput
+  Core/         AppState, AppSettings, protocol constants
+  Capture/      Screen streaming to connected clients
+  Crypto/       E2E secure channel (PBKDF2 + AES-256-GCM)
+  Interop/      Win32 click-through, SendInput, system tray
   Input/        Pointer acceleration + event injection
-  Net/          UDP discovery + WebSocket server
-  Views/        Transparent overlay window
+  Net/          UDP discovery, WebSocket server, ngrok tunnel
+  Views/        Overlay window + settings window
   ViewModels/   MVVM for the top bar
 ```
 

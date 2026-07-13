@@ -1,13 +1,14 @@
 # TouchBridge
 
 **Wireless touchpad + keyboard** — control your Windows PC from your Android phone
-over the local network.
+over the local network or remotely via ngrok.
 
 ```
 ┌─────────────┐   UDP discovery + WebSocket   ┌──────────────────┐
 │ Android APK │ ◄────────────────────────────►│ Windows Desktop  │
-│ black       │   same Wi‑Fi / hotspot / USB  │ transparent bar  │
-│ touchpad    │                               │ + input inject   │
+│ touchpad /  │   Wi‑Fi / hotspot / USB /     │ transparent bar  │
+│ keyboard /  │   ngrok (any network)         │ + input inject   │
+│ mouse modes │   optional E2E encryption     │ + screen mirror  │
 └─────────────┘                               └──────────────────┘
 ```
 
@@ -41,16 +42,25 @@ Open `Android/` in Android Studio → Run on device, or:
 cd Android && ./gradlew assembleDebug
 ```
 
-Discover the PC → enter PIN → connect → use touchpad.
+Discover the PC → enter PIN → connect → use touchpad, keyboard, or mouse mode.
+
+### 3. Remote access (optional)
+
+Install ngrok on the PC — TouchBridge auto-starts a tunnel and shows a **Remote** URL
+in the top bar. Paste that host on the phone (any network, including mobile data).
+See [`Windows/README.md`](Windows/README.md#remote-access-via-ngrok-any-network).
 
 ## Key design decisions
 
 - **Desktop**: only a top system app bar is opaque; the rest of the screen is
-  transparent and click-through so nothing is blocked underneath.
-- **Mobile**: full-black immersive touchpad; the **Android system keyboard (IME)**
-  handles all text input.
-- **Network**: works on same Wi‑Fi, phone mobile hotspot, or USB tethering — any
-  shared IPv4 subnet. UDP auto-discovery with manual `IP:port` fallback.
+  transparent and click-through so nothing is blocked underneath. Minimize to system
+  tray; settings window for ngrok domain, encryption passphrase, and keyboard theme.
+- **Mobile**: immersive black UI with **Touchpad**, **Keyboard**, and **Mouse** modes.
+  Keyboard chrome auto-hides for full-screen typing; themes are chosen on the PC.
+- **Network**: same Wi‑Fi, phone hotspot, USB tethering, or **ngrok** for different
+  networks. UDP auto-discovery with manual `host:port` / ngrok host fallback.
+- **Security**: optional **E2E encryption** (PBKDF2 + AES-256-GCM) when a passphrase
+  is set in PC settings.
 - **Protocol**: WebSocket over TCP (port 47831) + UDP discovery (port 47832).
   Spec: [`Rnd/05-network-protocol.md`](Rnd/05-network-protocol.md).
 
@@ -64,8 +74,8 @@ Discover the PC → enter PIN → connect → use touchpad.
 
 | Component | Build | Features |
 |-----------|-------|----------|
-| Windows Desktop | ✅ builds | Overlay, discovery, WebSocket server, SendInput, modes bar |
-| Android Mobile | ✅ project ready | Discovery, WebSocket client, touchpad, IME, immersive UI |
+| Windows Desktop | ✅ builds | Overlay, tray, settings, ngrok tunnel, E2E encryption, screen mirror, keyboard theme sync |
+| Android Mobile | ✅ builds | Discovery, WebSocket client, touchpad / keyboard / mouse modes, themed keyboard, debug log |
 | RnD docs | ✅ complete | SRS, architecture, protocol, wireframes |
 
 ## License

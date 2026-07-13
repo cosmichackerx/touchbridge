@@ -1,7 +1,7 @@
 # TouchBridge — Android Mobile
 
-Turns your Android phone into a **wireless touchpad + keyboard** for a Windows PC
-over the local network.
+Turns your Android phone into a **wireless touchpad + keyboard + mouse** for a
+Windows PC over the local network or via ngrok.
 
 ## Requirements
 
@@ -26,23 +26,36 @@ cd Android
 ## Usage
 
 1. Start **TouchBridge Desktop** on your Windows PC (note the PIN).
-2. Ensure phone and PC are on the **same network** (Wi‑Fi, hotspot, or USB tether).
-3. Open TouchBridge on the phone — it discovers desktops automatically.
-4. Tap a desktop, enter the PIN, tap **Connect**.
-5. Use the black touchpad surface to move/click/scroll.
-6. Tap the **keyboard icon** to show the Android system keyboard for text input.
+2. Connect using one of:
+   - **Same network** — auto-discovery (Wi‑Fi, hotspot, or USB tether)
+   - **Remote** — paste the ngrok host from the PC bar (any network, including mobile data)
+3. Tap a desktop or enter host manually, enter the PIN, tap **Connect**.
+4. Use **Touchpad**, **Keyboard**, or **Mouse** mode from the bottom switcher.
+
+### Touchpad mode
+
+Move finger to move cursor; tap to click; two-finger scroll.
+
+### Keyboard mode
+
+Full-screen on-screen keyboard. Top bar and mode switcher auto-hide after 3 seconds;
+swipe down on the thin handle at the top to show them again. **Keyboard theme** (colors /
+skins) is set on the PC in Settings — not on the phone.
+
+### Mouse mode
+
+Dedicated mouse surface with left / right / middle buttons and scroll.
 
 ## UI layout
 
-- **Connect screen** — discovery list + manual `IP:port` + PIN entry.
-- **Touchpad screen** — edge-to-edge black surface (immersive), thin top/bottom bars,
-  system IME for keyboard input.
+- **Connect screen** — discovery list, manual `host:port` or ngrok host, PIN entry, debug log panel.
+- **Touchpad screen** — immersive black surface, mode switcher, connection status.
 
 ## Architecture (Clean)
 
 ```
 domain/         pure Kotlin models, repository interfaces, use cases
-data/           OkHttp WebSocket, UDP discovery, protocol codec, DataStore
+data/           OkHttp WebSocket, UDP discovery, protocol codec, E2E crypto, DataStore
 presentation/   Compose Material 3 screens + ViewModels
 di/             Hilt modules
 ```
@@ -54,5 +67,9 @@ di/             Hilt modules
 | Same Wi‑Fi | Auto UDP | Manual IP |
 | Phone hotspot | Auto (if not client-isolated) | Manual PC IP on hotspot subnet |
 | USB tethering | Manual | PC IP from tether adapter (e.g. 192.168.42.x) |
+| Different network | — | ngrok host from PC bar + PIN |
+
+If the PC has an encryption passphrase configured, the client negotiates an encrypted
+channel automatically after PIN auth.
 
 Protocol spec: `../Rnd/05-network-protocol.md`
