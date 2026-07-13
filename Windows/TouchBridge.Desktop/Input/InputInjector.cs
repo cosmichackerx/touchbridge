@@ -15,7 +15,8 @@ public sealed class InputInjector
         ["up"] = 0x26, ["down"] = 0x28, ["left"] = 0x25, ["right"] = 0x27,
         ["home"] = 0x24, ["end"] = 0x23, ["pageup"] = 0x21, ["pagedown"] = 0x22,
         ["ctrl"] = 0x11, ["alt"] = 0x12, ["shift"] = 0x10, ["win"] = 0x5B,
-        ["capslock"] = 0x14,
+        ["capslock"] = 0x14, ["insert"] = 0x2D, ["printscreen"] = 0x2C,
+        ["numlock"] = 0x90, ["apps"] = 0x5D,
         ["f1"] = 0x70, ["f2"] = 0x71, ["f3"] = 0x72, ["f4"] = 0x73,
         ["f5"] = 0x74, ["f6"] = 0x75, ["f7"] = 0x76, ["f8"] = 0x77,
         ["f9"] = 0x78, ["f10"] = 0x79, ["f11"] = 0x7A, ["f12"] = 0x7B,
@@ -173,6 +174,8 @@ public sealed class InputInjector
         var name = root.GetProperty("name").GetString() ?? "trackpad";
         _state.ActiveMode = name.ToLowerInvariant() switch
         {
+            "keyboard" => ControlMode.Keyboard,
+            "mouse" => ControlMode.Mouse,
             "presentation" => ControlMode.Presentation,
             "media" => ControlMode.Media,
             "gamepad" => ControlMode.Gamepad,

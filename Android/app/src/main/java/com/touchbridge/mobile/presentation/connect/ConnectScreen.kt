@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,14 +31,25 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.touchbridge.mobile.R
 import com.touchbridge.mobile.domain.model.DiscoveredDesktop
+import com.touchbridge.mobile.presentation.common.DebugLogPanel
 
 @Composable
 fun ConnectScreen(
     onConnected: () -> Unit,
     modifier: Modifier = Modifier,
+    autoHost: String? = null,
+    autoPin: String? = null,
     viewModel: ConnectViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(autoHost, autoPin) {
+        if (!autoHost.isNullOrBlank()) {
+            viewModel.setManualHost(autoHost)
+            if (!autoPin.isNullOrBlank()) viewModel.setPin(autoPin)
+            viewModel.connect()
+        }
+    }
 
     if (uiState.navigateToTouchpad) {
         onConnected()
@@ -142,6 +154,18 @@ fun ConnectScreen(
                 Text(stringResource(R.string.connect_button))
             }
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = stringResource(R.string.debug_logs_title),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.secondary
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        DebugLogPanel()
     }
 }
 

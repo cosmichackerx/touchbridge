@@ -11,6 +11,7 @@
     <RootNamespace>TouchBridge.Desktop</RootNamespace>
     <Version>1.0.0</Version>
     <Description>TouchBridge Desktop — wireless touchpad server for Windows</Description>
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
 </Project>

@@ -19,11 +19,10 @@ class ConnectUseCase @Inject constructor(
     private val connectionRepository: ConnectionRepository
 ) {
     suspend operator fun invoke(
-        host: String,
-        port: Int,
+        webSocketUrl: String,
         pin: String?,
         deviceName: String
-    ) = connectionRepository.connect(host, port, pin, deviceName)
+    ) = connectionRepository.connect(webSocketUrl, pin, deviceName)
 
     suspend fun disconnect() = connectionRepository.disconnect()
 }

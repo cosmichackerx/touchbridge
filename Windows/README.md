@@ -58,6 +58,31 @@ Output: `TouchBridge.Desktop/bin/Release/net10.0-windows/win-x64/publish/TouchBr
 | Same Wi‑Fi | Yes | Auto-discovery via UDP broadcast |
 | Phone hotspot → PC joins | Yes | Auto-discovery; if isolated, use manual IP |
 | USB tethering | Yes | Use manual IP shown in phone tether settings |
+| **Different network (mobile data / remote Wi‑Fi)** | Yes | Use **ngrok** remote URL shown in the PC top bar |
+
+## Remote access via ngrok (any network)
+
+TouchBridge auto-starts an **ngrok** tunnel when the desktop app launches (if ngrok is installed).
+
+1. **One-time setup**
+   ```powershell
+   cd Windows
+   .\setup-ngrok.ps1 -InstallOnly
+   ngrok config add-authtoken YOUR_TOKEN   # from https://dashboard.ngrok.com
+   ```
+2. **Run** TouchBridge (tunnel starts automatically):
+   ```powershell
+   dotnet run --project TouchBridge.Desktop/TouchBridge.Desktop.csproj
+   ```
+3. On the PC top bar, click **Remote …ngrok-free.app** to copy the public host.
+4. On your phone (any network — mobile data is fine):
+   - Paste the ngrok host in the address field (e.g. `xxxx.ngrok-free.app`)
+   - Enter the **PIN** from the PC bar
+   - Tap **Connect**
+
+Connection status is also written to `%LOCALAPPDATA%\TouchBridge\status.json` for scripts.
+
+**Security note:** The ngrok URL is public. Anyone who has the URL and PIN can control your PC while TouchBridge is running. Keep the PIN private and exit TouchBridge when done.
 
 ## Project structure
 

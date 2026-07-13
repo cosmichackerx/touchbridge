@@ -20,6 +20,11 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        const val EXTRA_HOST = "host"
+        const val EXTRA_PIN = "pin"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -35,6 +40,8 @@ class MainActivity : ComponentActivity() {
                 ) {
                     composable("connect") {
                         ConnectScreen(
+                            autoHost = intent.getStringExtra(EXTRA_HOST),
+                            autoPin = intent.getStringExtra(EXTRA_PIN),
                             onConnected = {
                                 navController.navigate("touchpad") {
                                     popUpTo("connect") { inclusive = false }

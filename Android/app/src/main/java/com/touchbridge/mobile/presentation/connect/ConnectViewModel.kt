@@ -7,6 +7,8 @@ import com.touchbridge.mobile.domain.model.ConnectionState
 import com.touchbridge.mobile.domain.model.DiscoveredDesktop
 import com.touchbridge.mobile.domain.usecase.ConnectUseCase
 import com.touchbridge.mobile.domain.usecase.DiscoverDesktopsUseCase
+import com.touchbridge.mobile.util.AppLogger
+import com.touchbridge.mobile.util.ConnectionEndpointParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,8 +38,10 @@ class ConnectViewModel @Inject constructor(
     val uiState: StateFlow<ConnectUiState> = _uiState.asStateFlow()
 
     init {
+        AppLogger.i("Connect", "Starting desktop discovery")
         viewModelScope.launch {
             discoverUseCase().collect { desktops ->
+                AppLogger.d("Connect", "Found ${desktops.size} desktop(s): ${desktops.map { it.name }}")
                 _uiState.update { it.copy(desktops = desktops, isDiscovering = true) }
             }
         }
@@ -52,6 +56,7 @@ class ConnectViewModel @Inject constructor(
     }
 
     fun selectDesktop(desktop: DiscoveredDesktop) {
+        AppLogger.i("Connect", "Selected desktop: ${desktop.name} @ ${desktop.host}:${desktop.port}")
         _uiState.update {
             it.copy(
                 selectedDesktop = desktop,
@@ -62,29 +67,35 @@ class ConnectViewModel @Inject constructor(
 
     fun connect() {
         val state = _uiState.value
-        val (host, port) = parseHostPort(state) ?: run {
-            _uiState.update { it.copy(error = "Invalid host:port") }
+        val endpoint = resolveEndpoint(state) ?: run {
+            _uiState.update { it.copy(error = "Invalid address") }
             return
         }
 
         _uiState.update { it.copy(isConnecting = true, error = null) }
+        AppLogger.i(
+            "Connect",
+            "Connecting to ${endpoint.webSocketUrl} (pin=${if (state.pin.isBlank()) "none" else "***"})"
+        )
 
         viewModelScope.launch {
             val deviceName = Build.MODEL
             val result = connectUseCase(
-                host = host,
-                port = port,
+                webSocketUrl = endpoint.webSocketUrl,
                 pin = state.pin.ifBlank { null },
                 deviceName = deviceName
             )
 
             _uiState.update {
                 if (result.isSuccess) {
+                    AppLogger.i("Connect", "Connected successfully")
                     it.copy(isConnecting = false, navigateToTouchpad = true)
                 } else {
+                    val err = result.exceptionOrNull()?.message ?: "Connection failed"
+                    AppLogger.e("Connect", "Connection failed: $err")
                     it.copy(
                         isConnecting = false,
-                        error = result.exceptionOrNull()?.message ?: "Connection failed"
+                        error = err
                     )
                 }
             }
@@ -100,17 +111,10 @@ class ConnectViewModel @Inject constructor(
         discoverUseCase.stop()
     }
 
-    private fun parseHostPort(state: ConnectUiState): Pair<String, Int>? {
-        state.selectedDesktop?.let { return it.host to it.port }
-
-        val parts = state.manualHost.split(":")
-        if (parts.size == 2) {
-            val port = parts[1].toIntOrNull() ?: return null
-            return parts[0] to port
+    private fun resolveEndpoint(state: ConnectUiState): ConnectionEndpointParser.Endpoint? {
+        state.selectedDesktop?.let {
+            return ConnectionEndpointParser.fromDiscoveredHost(it.host, it.port)
         }
-        if (parts.size == 1 && parts[0].isNotBlank()) {
-            return parts[0] to 47831
-        }
-        return null
+        return ConnectionEndpointParser.parse(state.manualHost)
     }
 }

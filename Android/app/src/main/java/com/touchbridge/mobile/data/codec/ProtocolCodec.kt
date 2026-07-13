@@ -29,6 +29,20 @@ object ProtocolCodec {
     fun key(code: String, action: String = "tap"): String =
         """{"t":"key","code":"$code","action":"$action"}"""
 
+    fun chord(mods: List<String>, code: String): String {
+        val modArray = mods.joinToString(",") { "\"$it\"" }
+        return """{"t":"chord","mods":[$modArray],"code":"$code"}"""
+    }
+
+    fun media(key: String): String =
+        """{"t":"media","key":"$key"}"""
+
+    fun mode(name: String): String =
+        """{"t":"mode","name":"$name"}"""
+
+    fun screen(on: Boolean): String =
+        """{"t":"screen","on":$on}"""
+
     fun text(value: String): String {
         val escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
         return """{"t":"text","value":"$escaped"}"""

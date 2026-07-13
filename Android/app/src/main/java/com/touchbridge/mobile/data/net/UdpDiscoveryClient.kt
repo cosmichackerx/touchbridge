@@ -4,6 +4,7 @@ import com.touchbridge.mobile.data.codec.ProtocolCodec
 import com.touchbridge.mobile.data.codec.ProtocolConstants
 import com.touchbridge.mobile.domain.model.DiscoveredDesktop
 import com.touchbridge.mobile.domain.repository.DiscoveryRepository
+import com.touchbridge.mobile.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -28,6 +29,7 @@ class UdpDiscoveryClient @Inject constructor() : DiscoveryRepository {
 
         while (currentCoroutineContext().isActive && running) {
             try {
+                AppLogger.d("Discovery", "Sending UDP broadcast on port ${ProtocolConstants.DISCOVERY_PORT}")
                 DatagramSocket().use { socket ->
                     socket.broadcast = true
                     val request = ProtocolCodec.discoverRequest().toByteArray()
@@ -47,6 +49,7 @@ class UdpDiscoveryClient @Inject constructor() : DiscoveryRepository {
                             socket.receive(reply)
                             val desktop = parseAnnounce(String(reply.data, 0, reply.length))
                             if (desktop != null) {
+                                AppLogger.i("Discovery", "Found: ${desktop.name} @ ${desktop.host}:${desktop.port}")
                                 found[desktop.host] = desktop
                             }
                         } catch (_: Exception) {
@@ -54,7 +57,9 @@ class UdpDiscoveryClient @Inject constructor() : DiscoveryRepository {
                         }
                     }
                 }
-            } catch (_: Exception) { /* network unavailable */ }
+            } catch (e: Exception) {
+                AppLogger.w("Discovery", "Broadcast failed: ${e.message}")
+            }
 
             emit(found.values.toList())
             delay(2000)

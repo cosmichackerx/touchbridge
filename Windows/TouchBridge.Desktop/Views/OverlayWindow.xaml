@@ -16,6 +16,7 @@
     <Window.Resources>
         <conv:HexToBrushConverter x:Key="HexToBrush"/>
         <conv:ModeEqualsConverter x:Key="ModeEquals"/>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
         <Style x:Key="BarButton" TargetType="Button">
             <Setter Property="Background" Value="#33FFFFFF"/>
             <Setter Property="Foreground" Value="#E8E8F0"/>
@@ -88,7 +89,10 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
@@ -112,33 +116,56 @@
                 </StackPanel>
 
                 <!-- Mode switcher -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <RadioButton Content="Trackpad" GroupName="Mode" Style="{StaticResource ModePill}"
-                                 IsChecked="{Binding SelectedMode, Converter={StaticResource ModeEquals}, ConverterParameter=Trackpad}"
+                                 IsChecked="{Binding SelectedMode, Mode=OneWay, Converter={StaticResource ModeEquals}, ConverterParameter=Trackpad}"
                                  Command="{Binding SetModeCommand}" CommandParameter="Trackpad"/>
+                    <RadioButton Content="Keyboard" GroupName="Mode" Style="{StaticResource ModePill}"
+                                 IsChecked="{Binding SelectedMode, Mode=OneWay, Converter={StaticResource ModeEquals}, ConverterParameter=Keyboard}"
+                                 Command="{Binding SetModeCommand}" CommandParameter="Keyboard"/>
+                    <RadioButton Content="Mouse" GroupName="Mode" Style="{StaticResource ModePill}"
+                                 IsChecked="{Binding SelectedMode, Mode=OneWay, Converter={StaticResource ModeEquals}, ConverterParameter=Mouse}"
+                                 Command="{Binding SetModeCommand}" CommandParameter="Mouse"/>
                     <RadioButton Content="Presentation" GroupName="Mode" Style="{StaticResource ModePill}"
-                                 IsChecked="{Binding SelectedMode, Converter={StaticResource ModeEquals}, ConverterParameter=Presentation}"
+                                 IsChecked="{Binding SelectedMode, Mode=OneWay, Converter={StaticResource ModeEquals}, ConverterParameter=Presentation}"
                                  Command="{Binding SetModeCommand}" CommandParameter="Presentation"/>
                     <RadioButton Content="Media" GroupName="Mode" Style="{StaticResource ModePill}"
-                                 IsChecked="{Binding SelectedMode, Converter={StaticResource ModeEquals}, ConverterParameter=Media}"
+                                 IsChecked="{Binding SelectedMode, Mode=OneWay, Converter={StaticResource ModeEquals}, ConverterParameter=Media}"
                                  Command="{Binding SetModeCommand}" CommandParameter="Media"/>
                     <RadioButton Content="Gamepad" GroupName="Mode" Style="{StaticResource ModePill}"
-                                 IsChecked="{Binding SelectedMode, Converter={StaticResource ModeEquals}, ConverterParameter=Gamepad}"
+                                 IsChecked="{Binding SelectedMode, Mode=OneWay, Converter={StaticResource ModeEquals}, ConverterParameter=Gamepad}"
                                  Command="{Binding SetModeCommand}" CommandParameter="Gamepad"/>
                 </StackPanel>
 
+                <!-- Remote tunnel URL (ngrok) -->
+                <Button Grid.Column="2" Style="{StaticResource BarButton}"
+                        Content="{Binding RemoteUrlText}" Command="{Binding CopyRemoteUrlCommand}"
+                        VerticalAlignment="Center" Margin="0,0,8,0"
+                        Visibility="{Binding ShowRemoteUrl, Converter={StaticResource BoolToVis}}"
+                        ToolTip="Click to copy ngrok address for phone"/>
+
                 <!-- PIN -->
-                <Button Grid.Column="3" Style="{StaticResource BarButton}"
+                <Button Grid.Column="4" Style="{StaticResource BarButton}"
                         Content="{Binding PinText}" Command="{Binding TogglePinCommand}"
                         VerticalAlignment="Center" Margin="0,0,8,0"/>
 
                 <!-- Refresh PIN -->
-                <Button Grid.Column="4" Style="{StaticResource BarButton}" Content="↻"
+                <Button Grid.Column="5" Style="{StaticResource BarButton}" Content="↻"
                         Command="{Binding RefreshPinCommand}" VerticalAlignment="Center" Margin="0,0,8,0"
                         ToolTip="New PIN"/>
 
+                <!-- Settings -->
+                <Button Grid.Column="6" Style="{StaticResource BarButton}" Content="⚙ Settings"
+                        Command="{Binding OpenSettingsCommand}" VerticalAlignment="Center" Margin="0,0,8,0"
+                        ToolTip="Edit remote domain &amp; password"/>
+
+                <!-- Minimize to tray -->
+                <Button Grid.Column="7" Style="{StaticResource BarButton}" Content="─ Minimize"
+                        Command="{Binding MinimizeCommand}" VerticalAlignment="Center" Margin="0,0,8,0"
+                        ToolTip="Hide bar to system tray"/>
+
                 <!-- Exit -->
-                <Button Grid.Column="5" Style="{StaticResource ExitButton}" Content="✕ Exit"
+                <Button Grid.Column="8" Style="{StaticResource ExitButton}" Content="✕ Exit"
                         Command="{Binding ExitCommand}" VerticalAlignment="Center"/>
             </Grid>
         </Border>

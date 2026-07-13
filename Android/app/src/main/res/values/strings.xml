@@ -6,8 +6,8 @@
     <string name="connect_title">TouchBridge</string>
     <string name="connect_discovering">Discovering desktops…</string>
     <string name="connect_no_devices">No desktops found on this network</string>
-    <string name="connect_manual_hint">IP:port (e.g. 192.168.1.20:47831)</string>
-    <string name="connect_pin_hint">6-digit PIN</string>
+    <string name="connect_manual_hint">Address (IP:port or ngrok host)</string>
+    <string name="connect_pin_hint">PIN or password</string>
     <string name="connect_button">Connect</string>
     <string name="connect_error_pin">Invalid PIN</string>
     <string name="connect_error_network">Connection failed</string>
@@ -20,6 +20,49 @@
     <string name="touchpad_right">R</string>
     <string name="touchpad_keyboard">Keyboard</string>
     <string name="touchpad_back">Back</string>
+    <string name="touchpad_screen_view">Desktop screen</string>
+    <string name="touchpad_screen_show">Show desktop screen</string>
+    <string name="touchpad_screen_hide">Hide desktop screen</string>
+
+    <!-- Modes -->
+    <string name="mode_trackpad">Trackpad</string>
+    <string name="mode_keyboard">Keyboard</string>
+    <string name="mode_mouse">Mouse</string>
+    <string name="mode_presentation">Presentation</string>
+    <string name="mode_media">Media</string>
+    <string name="mode_gamepad">Gamepad</string>
+
+    <!-- Mouse-only mode -->
+    <string name="mouse_hint">Slide to move · tap to click · two fingers to scroll</string>
+
+    <!-- Keyboard mode -->
+    <string name="keyboard_rotate_hint">Rotate your phone for the full keyboard</string>
+
+    <!-- Presentation controls -->
+    <string name="pres_start">Start (F5)</string>
+    <string name="pres_prev">Previous</string>
+    <string name="pres_next">Next</string>
+    <string name="pres_black">Black screen</string>
+    <string name="pres_end">End show</string>
+    <string name="pres_hint">Control your slideshow</string>
+
+    <!-- Media controls -->
+    <string name="media_prev">Previous track</string>
+    <string name="media_playpause">Play / Pause</string>
+    <string name="media_next">Next track</string>
+    <string name="media_voldown">Volume down</string>
+    <string name="media_mute">Mute</string>
+    <string name="media_volup">Volume up</string>
+    <string name="media_hint">System media &amp; volume</string>
+
+    <!-- Gamepad controls -->
+    <string name="gamepad_up">Up</string>
+    <string name="gamepad_down">Down</string>
+    <string name="gamepad_left">Left</string>
+    <string name="gamepad_right">Right</string>
+    <string name="gamepad_a">A</string>
+    <string name="gamepad_b">B</string>
+    <string name="gamepad_hint">Arrow keys · A = Space · B = Enter</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -28,4 +71,11 @@
     <string name="settings_haptics">Haptic feedback</string>
     <string name="settings_keep_awake">Keep screen awake</string>
     <string name="settings_disconnect">Disconnect</string>
+
+    <!-- Debug -->
+    <string name="debug_logs_title">Debug logs</string>
+    <string name="debug_clear_logs">Clear logs</string>
+    <string name="debug_hide_logs">Hide logs</string>
+    <string name="debug_show_logs">Show logs</string>
+    <string name="debug_no_logs">No logs yet — connect or use touchpad to see activity</string>
 </resources>
