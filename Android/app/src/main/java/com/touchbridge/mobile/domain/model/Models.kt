@@ -4,7 +4,9 @@ data class DiscoveredDesktop(
     val name: String,
     val host: String,
     val port: Int,
-    val requiresPin: Boolean
+    val requiresPin: Boolean,
+    /** "usb" | "lan" from PC announce; empty if unknown. */
+    val link: String = ""
 )
 
 enum class ConnectionState {
@@ -32,6 +34,7 @@ enum class ControlMode {
     Trackpad,
     Keyboard,
     Mouse,
+    Scroll,
     Presentation,
     Media,
     Gamepad;

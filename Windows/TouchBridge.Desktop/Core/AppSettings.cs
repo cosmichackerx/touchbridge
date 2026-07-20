@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace TouchBridge.Desktop.Core;
 
 /// <summary>
-/// User-editable, locally-persisted settings: remote ngrok domain and shared password.
+/// User-editable, locally-persisted settings: remote ngrok domain, password, theme, link mode.
 /// ngrok auth is configured once on the PC via <c>ngrok config add-authtoken</c> (not stored here).
 /// </summary>
 public sealed class AppSettings
@@ -17,11 +17,18 @@ public sealed class AppSettings
     /// <summary>Wire name of the selected keyboard skin (see <see cref="KeyboardThemes"/>).</summary>
     public string KeyboardTheme { get; set; } = "dark";
 
+    /// <summary><c>online</c> or <c>offline</c> (USB tether).</summary>
+    public string LinkMode { get; set; } = "online";
+
     private static string SettingsPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "TouchBridge", "settings.dat");
 
-    private sealed record Payload(string NgrokDomain, string Password, string KeyboardTheme);
+    private sealed record Payload(
+        string NgrokDomain,
+        string Password,
+        string KeyboardTheme,
+        string LinkMode);
 
     public static AppSettings Load()
     {
@@ -38,7 +45,8 @@ public sealed class AppSettings
             {
                 NgrokDomain = root.TryGetProperty("NgrokDomain", out var d) ? d.GetString() ?? "" : "",
                 Password = root.TryGetProperty("Password", out var p) ? p.GetString() ?? "" : "",
-                KeyboardTheme = root.TryGetProperty("KeyboardTheme", out var k) ? k.GetString() ?? "dark" : "dark"
+                KeyboardTheme = root.TryGetProperty("KeyboardTheme", out var k) ? k.GetString() ?? "dark" : "dark",
+                LinkMode = root.TryGetProperty("LinkMode", out var l) ? l.GetString() ?? "online" : "online"
             };
         }
         catch
@@ -53,7 +61,8 @@ public sealed class AppSettings
         {
             var dir = Path.GetDirectoryName(SettingsPath)!;
             Directory.CreateDirectory(dir);
-            var json = JsonSerializer.Serialize(new Payload(NgrokDomain, Password, KeyboardTheme));
+            var json = JsonSerializer.Serialize(
+                new Payload(NgrokDomain, Password, KeyboardTheme, LinkMode));
             File.WriteAllBytes(SettingsPath, Protect(json));
         }
         catch
@@ -61,6 +70,14 @@ public sealed class AppSettings
             // best-effort persistence
         }
     }
+
+    public NetworkLinkMode GetLinkMode() =>
+        LinkMode.Equals("offline", StringComparison.OrdinalIgnoreCase)
+            ? NetworkLinkMode.Offline
+            : NetworkLinkMode.Online;
+
+    public void SetLinkMode(NetworkLinkMode mode) =>
+        LinkMode = mode == NetworkLinkMode.Offline ? "offline" : "online";
 
     private static byte[] Protect(string json)
     {

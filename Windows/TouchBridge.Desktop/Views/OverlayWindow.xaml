@@ -96,6 +96,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Logo -->
@@ -109,10 +110,27 @@
                 </StackPanel>
 
                 <!-- Status -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
                     <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center"
                              Fill="{Binding StatusBrush, Converter={StaticResource HexToBrush}}"/>
                     <TextBlock Text="{Binding StatusText}" Foreground="#C0C0D0" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Online / Offline (USB) link mode -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <RadioButton Content="Online" GroupName="LinkMode" Style="{StaticResource ModePill}"
+                                 IsChecked="{Binding SelectedLinkMode, Mode=OneWay, Converter={StaticResource ModeEquals}, ConverterParameter=Online}"
+                                 Command="{Binding SetLinkModeCommand}" CommandParameter="Online"
+                                 ToolTip="Wi‑Fi / LAN / ngrok domain"/>
+                    <RadioButton Content="Offline" GroupName="LinkMode" Style="{StaticResource ModePill}"
+                                 IsChecked="{Binding SelectedLinkMode, Mode=OneWay, Converter={StaticResource ModeEquals}, ConverterParameter=Offline}"
+                                 Command="{Binding SetLinkModeCommand}" CommandParameter="Offline"
+                                 ToolTip="USB tether only — fastest"/>
+                    <Button Style="{StaticResource BarButton}"
+                            Content="{Binding LinkHintText}" Command="{Binding CopyLinkHintCommand}"
+                            VerticalAlignment="Center" Margin="6,0,0,0" Padding="8,4"
+                            Visibility="{Binding ShowLinkHint, Converter={StaticResource BoolToVis}}"
+                            ToolTip="Click to copy address for the phone"/>
                 </StackPanel>
 
                 <!-- Mode switcher -->
@@ -126,6 +144,9 @@
                     <RadioButton Content="Mouse" GroupName="Mode" Style="{StaticResource ModePill}"
                                  IsChecked="{Binding SelectedMode, Mode=OneWay, Converter={StaticResource ModeEquals}, ConverterParameter=Mouse}"
                                  Command="{Binding SetModeCommand}" CommandParameter="Mouse"/>
+                    <RadioButton Content="Scroll" GroupName="Mode" Style="{StaticResource ModePill}"
+                                 IsChecked="{Binding SelectedMode, Mode=OneWay, Converter={StaticResource ModeEquals}, ConverterParameter=Scroll}"
+                                 Command="{Binding SetModeCommand}" CommandParameter="Scroll"/>
                     <RadioButton Content="Presentation" GroupName="Mode" Style="{StaticResource ModePill}"
                                  IsChecked="{Binding SelectedMode, Mode=OneWay, Converter={StaticResource ModeEquals}, ConverterParameter=Presentation}"
                                  Command="{Binding SetModeCommand}" CommandParameter="Presentation"/>
@@ -137,35 +158,35 @@
                                  Command="{Binding SetModeCommand}" CommandParameter="Gamepad"/>
                 </StackPanel>
 
-                <!-- Remote tunnel URL (ngrok) -->
-                <Button Grid.Column="2" Style="{StaticResource BarButton}"
+                <!-- Remote tunnel URL (ngrok) — Online mode only -->
+                <Button Grid.Column="4" Style="{StaticResource BarButton}"
                         Content="{Binding RemoteUrlText}" Command="{Binding CopyRemoteUrlCommand}"
                         VerticalAlignment="Center" Margin="0,0,8,0"
                         Visibility="{Binding ShowRemoteUrl, Converter={StaticResource BoolToVis}}"
                         ToolTip="Click to copy ngrok address for phone"/>
 
                 <!-- PIN -->
-                <Button Grid.Column="4" Style="{StaticResource BarButton}"
+                <Button Grid.Column="5" Style="{StaticResource BarButton}"
                         Content="{Binding PinText}" Command="{Binding TogglePinCommand}"
                         VerticalAlignment="Center" Margin="0,0,8,0"/>
 
                 <!-- Refresh PIN -->
-                <Button Grid.Column="5" Style="{StaticResource BarButton}" Content="↻"
+                <Button Grid.Column="6" Style="{StaticResource BarButton}" Content="↻"
                         Command="{Binding RefreshPinCommand}" VerticalAlignment="Center" Margin="0,0,8,0"
                         ToolTip="New PIN"/>
 
                 <!-- Settings -->
-                <Button Grid.Column="6" Style="{StaticResource BarButton}" Content="⚙ Settings"
+                <Button Grid.Column="7" Style="{StaticResource BarButton}" Content="⚙ Settings"
                         Command="{Binding OpenSettingsCommand}" VerticalAlignment="Center" Margin="0,0,8,0"
                         ToolTip="Edit remote domain &amp; password"/>
 
                 <!-- Minimize to tray -->
-                <Button Grid.Column="7" Style="{StaticResource BarButton}" Content="─ Minimize"
+                <Button Grid.Column="8" Style="{StaticResource BarButton}" Content="─ Minimize"
                         Command="{Binding MinimizeCommand}" VerticalAlignment="Center" Margin="0,0,8,0"
                         ToolTip="Hide bar to system tray"/>
 
                 <!-- Exit -->
-                <Button Grid.Column="8" Style="{StaticResource ExitButton}" Content="✕ Exit"
+                <Button Grid.Column="9" Style="{StaticResource ExitButton}" Content="✕ Exit"
                         Command="{Binding ExitCommand}" VerticalAlignment="Center"/>
             </Grid>
         </Border>

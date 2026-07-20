@@ -19,9 +19,12 @@ public sealed class OverlayViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(PinText));
             OnPropertyChanged(nameof(ShowPin));
             OnPropertyChanged(nameof(SelectedMode));
+            OnPropertyChanged(nameof(SelectedLinkMode));
             OnPropertyChanged(nameof(RemoteUrlText));
             OnPropertyChanged(nameof(ShowRemoteUrl));
             OnPropertyChanged(nameof(RemoteStatusText));
+            OnPropertyChanged(nameof(LinkHintText));
+            OnPropertyChanged(nameof(ShowLinkHint));
         };
 
         ExitCommand = new RelayCommand(_ => RequestExit?.Invoke());
@@ -32,6 +35,7 @@ public sealed class OverlayViewModel : INotifyPropertyChanged
         });
         RefreshPinCommand = new RelayCommand(_ => _state.RotatePin());
         CopyRemoteUrlCommand = new RelayCommand(_ => CopyRemoteUrl());
+        CopyLinkHintCommand = new RelayCommand(_ => CopyLinkHint());
         OpenSettingsCommand = new RelayCommand(_ => RequestOpenSettings?.Invoke());
         MinimizeCommand = new RelayCommand(_ => RequestMinimize?.Invoke());
         SetModeCommand = new RelayCommand(p =>
@@ -43,11 +47,17 @@ public sealed class OverlayViewModel : INotifyPropertyChanged
                 _state.SendModeToClient?.Invoke(mode);
             }
         });
+        SetLinkModeCommand = new RelayCommand(p =>
+        {
+            if (p is string linkStr && Enum.TryParse<NetworkLinkMode>(linkStr, true, out var link))
+                RequestSetLinkMode?.Invoke(link);
+        });
     }
 
     public event Action? RequestExit;
     public event Action? RequestOpenSettings;
     public event Action? RequestMinimize;
+    public event Action<NetworkLinkMode>? RequestSetLinkMode;
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public string DeviceName => _state.DeviceName;
@@ -56,13 +66,18 @@ public sealed class OverlayViewModel : INotifyPropertyChanged
     {
         ConnectionStatus.Connected => $"Connected · {_state.ConnectedClient}",
         ConnectionStatus.Error => "Error",
-        _ => "Waiting for device…"
+        _ when _state.LinkMode == NetworkLinkMode.Offline =>
+            string.IsNullOrEmpty(_state.UsbEndpointIp)
+                ? "USB Offline · enable phone tether"
+                : "USB Offline · waiting…",
+        _ => "Online · waiting for device…"
     };
 
     public string StatusBrush => _state.Status switch
     {
         ConnectionStatus.Connected => "#4ADE80",
         ConnectionStatus.Error => "#F87171",
+        _ when _state.LinkMode == NetworkLinkMode.Offline && string.IsNullOrEmpty(_state.UsbEndpointIp) => "#F87171",
         _ => "#FBBF24"
     };
 
@@ -75,17 +90,24 @@ public sealed class OverlayViewModel : INotifyPropertyChanged
         ? $"Remote {url}"
         : string.Empty;
 
-    public bool ShowRemoteUrl => !string.IsNullOrEmpty(_state.RemoteTunnelUrl);
+    public bool ShowRemoteUrl =>
+        _state.LinkMode == NetworkLinkMode.Online && !string.IsNullOrEmpty(_state.RemoteTunnelUrl);
 
     public string RemoteStatusText => _state.RemoteTunnelStatus;
 
+    public string LinkHintText => _state.LinkHint;
+    public bool ShowLinkHint => !string.IsNullOrEmpty(_state.LinkHint);
+
     public string SelectedMode => _state.ActiveMode.ToString();
+    public string SelectedLinkMode => _state.LinkMode.ToString();
 
     public ICommand ExitCommand { get; }
     public ICommand TogglePinCommand { get; }
     public ICommand RefreshPinCommand { get; }
     public ICommand CopyRemoteUrlCommand { get; }
+    public ICommand CopyLinkHintCommand { get; }
     public ICommand SetModeCommand { get; }
+    public ICommand SetLinkModeCommand { get; }
     public ICommand OpenSettingsCommand { get; }
     public ICommand MinimizeCommand { get; }
 
@@ -105,6 +127,24 @@ public sealed class OverlayViewModel : INotifyPropertyChanged
         {
             _state.RemoteTunnelStatus = "Copy failed";
             _state.NotifyChanged();
+        }
+    }
+
+    private void CopyLinkHint()
+    {
+        var text = _state.UsbEndpointIp is { Length: > 0 } ip
+            ? $"{ip}:{ProtocolConstants.ControlPort}"
+            : _state.LinkHint;
+        if (string.IsNullOrWhiteSpace(text)) return;
+        try
+        {
+            System.Windows.Clipboard.SetText(text);
+            _state.LinkHint = $"{text} · copied";
+            _state.NotifyChanged();
+        }
+        catch
+        {
+            /* ignore */
         }
     }
 }

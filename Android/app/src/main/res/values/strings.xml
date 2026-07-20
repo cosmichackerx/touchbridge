@@ -9,6 +9,8 @@
     <string name="connect_manual_hint">Address (IP:port or ngrok host)</string>
     <string name="connect_pin_hint">PIN or password</string>
     <string name="connect_button">Connect</string>
+    <string name="connect_link_usb">USB · fast</string>
+    <string name="connect_link_lan">Wi‑Fi / LAN</string>
     <string name="connect_error_pin">Invalid PIN</string>
     <string name="connect_error_network">Connection failed</string>
 
@@ -28,12 +30,20 @@
     <string name="mode_trackpad">Trackpad</string>
     <string name="mode_keyboard">Keyboard</string>
     <string name="mode_mouse">Mouse</string>
+    <string name="mode_scroll">Scroll</string>
     <string name="mode_presentation">Presentation</string>
     <string name="mode_media">Media</string>
     <string name="mode_gamepad">Gamepad</string>
 
     <!-- Mouse-only mode -->
-    <string name="mouse_hint">Slide to move · tap to click · two fingers to scroll</string>
+    <string name="mouse_hint">Slide to move · tap to click · two fingers scroll only · use L/R buttons</string>
+
+    <!-- Scroll-only mode -->
+    <string name="scroll_hint">Drag to scroll · hold arrows to keep scrolling</string>
+    <string name="scroll_up">Up</string>
+    <string name="scroll_down">Down</string>
+    <string name="scroll_left">Left</string>
+    <string name="scroll_right">Right</string>
 
     <!-- Keyboard mode -->
     <string name="keyboard_rotate_hint">Rotate your phone for the full keyboard</string>
@@ -62,7 +72,20 @@
     <string name="gamepad_right">Right</string>
     <string name="gamepad_a">A</string>
     <string name="gamepad_b">B</string>
-    <string name="gamepad_hint">Arrow keys · A = Space · B = Enter</string>
+    <string name="gamepad_x">X</string>
+    <string name="gamepad_y">Y</string>
+    <string name="gamepad_l1">L1</string>
+    <string name="gamepad_l2">L2</string>
+    <string name="gamepad_r1">R1</string>
+    <string name="gamepad_r2">R2</string>
+    <string name="gamepad_select">Select</string>
+    <string name="gamepad_start">Start</string>
+    <string name="gamepad_skin_classic">Classic</string>
+    <string name="gamepad_skin_arctic">Arctic</string>
+    <string name="gamepad_skin_neon">Neon</string>
+    <string name="gamepad_skin_midnight">Midnight</string>
+    <string name="gamepad_skin_ember">Ember</string>
+    <string name="gamepad_hint">Left stick / D-pad = WASD · Right stick = look · A Space · B Esc · X Ctrl · Y Enter · L1/R1 Q/E · L2/R2 click</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>

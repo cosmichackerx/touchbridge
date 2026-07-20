@@ -33,12 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Full desktop-style keyboard. Adapts to orientation: the numpad shows alongside the main
- * block in landscape and is hidden in portrait so the letter keys stay comfortably sized.
- * Modifier keys (Ctrl/Alt/Win/Shift) act as one-shot stickies: tap a modifier, then a key, and
- * it clears automatically — Caps Lock is a real toggle handled by the PC. Printable keys are
- * sent as text so symbols type reliably regardless of the PC layout; shortcuts (Ctrl/Alt/Win +
- * key) are sent as chords.
+ * Full desktop-style keyboard. Hold printable keys / arrows to keep typing or repeating;
+ * modifiers stay one-shot sticky for chords.
  */
 @Composable
 fun KeyboardPanel(
@@ -84,6 +80,7 @@ fun KeyboardPanel(
     }
 
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val canHoldRepeat = activeMods.isEmpty()
 
     Row(
         modifier = modifier
@@ -92,23 +89,39 @@ fun KeyboardPanel(
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Main block
         Column(
             modifier = Modifier.weight(15f).fillMaxHeight(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             mainRows.forEachIndexed { i, row ->
-                KeyRow(row, activeMods, ::press, theme, theme.accentFor(i), Modifier.weight(1f))
+                KeyRow(
+                    caps = row,
+                    activeMods = activeMods,
+                    theme = theme,
+                    accent = theme.accentFor(i),
+                    holdRepeats = canHoldRepeat,
+                    onTap = ::press,
+                    onCharTick = { onChar(it.base) },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
-        // Numpad — only when there's room (landscape).
         if (landscape) {
             Column(
                 modifier = Modifier.weight(3.2f).fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 numpadRows.forEachIndexed { i, row ->
-                    KeyRow(row, activeMods, ::press, theme, theme.accentFor(i), Modifier.weight(1f))
+                    KeyRow(
+                        caps = row,
+                        activeMods = activeMods,
+                        theme = theme,
+                        accent = theme.accentFor(i),
+                        holdRepeats = canHoldRepeat,
+                        onTap = ::press,
+                        onCharTick = { onChar(it.base) },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
@@ -119,9 +132,11 @@ fun KeyboardPanel(
 private fun KeyRow(
     caps: List<Cap>,
     activeMods: Set<String>,
-    onPress: (Cap) -> Unit,
     theme: KbTheme,
     accent: Color?,
+    holdRepeats: Boolean,
+    onTap: (Cap) -> Unit,
+    onCharTick: (Cap.Char) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -137,7 +152,9 @@ private fun KeyRow(
                     active = cap is Cap.Mod && cap.mod in activeMods,
                     theme = theme,
                     accent = accent,
-                    onPress = { onPress(cap) },
+                    holdRepeats = holdRepeats,
+                    onTap = { onTap(cap) },
+                    onCharTick = onCharTick,
                     modifier = Modifier.weight(cap.weight)
                 )
             }
@@ -151,7 +168,9 @@ private fun KeyButton(
     active: Boolean,
     theme: KbTheme,
     accent: Color?,
-    onPress: () -> Unit,
+    holdRepeats: Boolean,
+    onTap: () -> Unit,
+    onCharTick: (Cap.Char) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
@@ -167,18 +186,33 @@ private fun KeyButton(
     } else {
         Modifier
     }
+
+    val interaction: Modifier = when {
+        holdRepeats && (cap is Cap.Named || cap is Cap.Char) -> Modifier.holdToRepeat(
+            initialDelayMs = 280,
+            intervalMs = 50
+        ) {
+            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            when (cap) {
+                is Cap.Char -> onCharTick(cap)
+                else -> onTap()
+            }
+        }
+        else -> Modifier.pointerInput(cap) {
+            detectTapGestures(onTap = {
+                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                onTap()
+            })
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxHeight()
             .clip(shape)
             .background(bg)
             .then(borderMod)
-            .pointerInput(cap) {
-                detectTapGestures(onTap = {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    onPress()
-                })
-            },
+            .then(interaction),
         contentAlignment = Alignment.Center
     ) {
         when (cap) {
@@ -186,11 +220,18 @@ private fun KeyButton(
                 val topLabel = cap.topLabel
                 if (topLabel != null) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        androidx.compose.material3.Text(topLabel, color = fg.copy(alpha = 0.7f), fontSize = 8.sp, lineHeight = 9.sp)
-                        androidx.compose.material3.Text(cap.mainLabel, color = fg, fontSize = 12.sp, lineHeight = 13.sp, fontWeight = FontWeight.Medium)
+                        androidx.compose.material3.Text(
+                            topLabel, color = fg.copy(alpha = 0.7f), fontSize = 8.sp, lineHeight = 9.sp
+                        )
+                        androidx.compose.material3.Text(
+                            cap.mainLabel, color = fg, fontSize = 12.sp, lineHeight = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 } else {
-                    androidx.compose.material3.Text(cap.mainLabel, color = fg, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    androidx.compose.material3.Text(
+                        cap.mainLabel, color = fg, fontSize = 13.sp, fontWeight = FontWeight.Medium
+                    )
                 }
             }
             is Cap.Named -> androidx.compose.material3.Text(
@@ -206,23 +247,17 @@ private fun KeyButton(
     }
 }
 
-/** A key definition. Widths are relative weights within a row. */
 private sealed interface Cap {
     val weight: Float
 
-    /** Printable key. [base] is typed normally; [shifted] when Shift is held. */
     data class Char(val base: String, val shifted: String, override val weight: Float = 1f) : Cap {
         val isLetter get() = base.length == 1 && base[0].isLetter()
         val mainLabel get() = if (isLetter) base.uppercase() else base
         val topLabel: String? get() = if (isLetter) null else shifted.takeIf { it != base }
     }
 
-    /** Non-printable key sent by code (enter, tab, arrows, F-keys…). */
     data class Named(val label: String, val code: String, override val weight: Float = 1f) : Cap
-
-    /** Sticky modifier (ctrl/alt/shift/win). */
     data class Mod(val label: String, val mod: String, override val weight: Float = 1f) : Cap
-
     data class Gap(override val weight: Float = 1f) : Cap
 }
 

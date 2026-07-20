@@ -16,10 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -34,19 +30,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import com.touchbridge.mobile.R
 import com.touchbridge.mobile.domain.model.ControlMode
 
@@ -89,12 +79,14 @@ fun PresentationPanel(
                 label = stringResource(R.string.pres_prev),
                 icon = Icons.Filled.SkipPrevious,
                 onClick = { onKey("left") },
+                repeatWhileHeld = true,
                 modifier = Modifier.weight(1f).height(96.dp)
             )
             ControlButton(
                 label = stringResource(R.string.pres_next),
                 icon = Icons.Filled.SkipNext,
                 onClick = { onKey("right") },
+                repeatWhileHeld = true,
                 modifier = Modifier.weight(1f).height(96.dp)
             )
         }
@@ -140,6 +132,7 @@ fun MediaPanel(
                 label = stringResource(R.string.media_prev),
                 icon = Icons.Filled.SkipPrevious,
                 onClick = { onMedia("prev") },
+                repeatWhileHeld = true,
                 modifier = Modifier.weight(1f).height(96.dp)
             )
             ControlButton(
@@ -152,6 +145,7 @@ fun MediaPanel(
                 label = stringResource(R.string.media_next),
                 icon = Icons.Filled.SkipNext,
                 onClick = { onMedia("next") },
+                repeatWhileHeld = true,
                 modifier = Modifier.weight(1f).height(96.dp)
             )
         }
@@ -164,6 +158,7 @@ fun MediaPanel(
                 label = stringResource(R.string.media_voldown),
                 icon = Icons.Filled.VolumeDown,
                 onClick = { onMedia("voldown") },
+                repeatWhileHeld = true,
                 modifier = Modifier.weight(1f).height(72.dp)
             )
             ControlButton(
@@ -176,64 +171,10 @@ fun MediaPanel(
                 label = stringResource(R.string.media_volup),
                 icon = Icons.Filled.VolumeUp,
                 onClick = { onMedia("volup") },
+                repeatWhileHeld = true,
                 modifier = Modifier.weight(1f).height(72.dp)
             )
         }
-    }
-}
-
-@Composable
-fun GamepadPanel(
-    onKeyDown: (String) -> Unit,
-    onKeyUp: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    ModeScaffold(hint = stringResource(R.string.gamepad_hint), modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            DPad(onKeyDown = onKeyDown, onKeyUp = onKeyUp)
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                HoldButton(
-                    label = stringResource(R.string.gamepad_a),
-                    onPress = { onKeyDown("space") },
-                    onRelease = { onKeyUp("space") },
-                    modifier = Modifier.size(84.dp)
-                )
-                HoldButton(
-                    label = stringResource(R.string.gamepad_b),
-                    onPress = { onKeyDown("enter") },
-                    onRelease = { onKeyUp("enter") },
-                    modifier = Modifier.size(84.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DPad(
-    onKeyDown: (String) -> Unit,
-    onKeyUp: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        HoldIconButton(Icons.Filled.KeyboardArrowUp, { onKeyDown("up") }, { onKeyUp("up") })
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            HoldIconButton(Icons.Filled.KeyboardArrowLeft, { onKeyDown("left") }, { onKeyUp("left") })
-            Spacer(Modifier.size(64.dp))
-            HoldIconButton(Icons.Filled.KeyboardArrowRight, { onKeyDown("right") }, { onKeyUp("right") })
-        }
-        HoldIconButton(Icons.Filled.KeyboardArrowDown, { onKeyDown("down") }, { onKeyUp("down") })
     }
 }
 
@@ -266,82 +207,51 @@ private fun ControlButton(
     label: String,
     icon: ImageVector?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val view = LocalView.current
-    FilledTonalButton(
-        onClick = {
-            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-            onClick()
-        },
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            if (icon != null) {
-                Icon(icon, contentDescription = label, modifier = Modifier.size(28.dp))
-                Spacer(Modifier.height(4.dp))
-            }
-            Text(text = label, textAlign = TextAlign.Center)
-        }
-    }
-}
-
-@Composable
-private fun HoldButton(
-    label: String,
-    onPress: () -> Unit,
-    onRelease: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    HoldSurface(onPress = onPress, onRelease = onRelease, modifier = modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
-        )
-    }
-}
-
-@Composable
-private fun HoldIconButton(
-    icon: ImageVector,
-    onPress: () -> Unit,
-    onRelease: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    HoldSurface(onPress = onPress, onRelease = onRelease, modifier = modifier.size(64.dp)) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.size(36.dp)
-        )
-    }
-}
-
-@Composable
-private fun HoldSurface(
-    onPress: () -> Unit,
-    onRelease: () -> Unit,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    repeatWhileHeld: Boolean = false
 ) {
     val view = LocalView.current
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = modifier.pointerInput(Unit) {
-            awaitEachGesture {
-                awaitFirstDown()
+    if (repeatWhileHeld) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = modifier.holdToRepeat(initialDelayMs = 250, intervalMs = 70) {
                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                onPress()
-                waitForUpOrCancellation()
-                onRelease()
+                onClick()
+            }
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (icon != null) {
+                        Icon(icon, contentDescription = label, modifier = Modifier.size(28.dp))
+                        Spacer(Modifier.height(4.dp))
+                    }
+                    Text(text = label, textAlign = TextAlign.Center)
+                }
             }
         }
-    ) {
-        Box(contentAlignment = Alignment.Center) { content() }
+    } else {
+        FilledTonalButton(
+            onClick = {
+                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                onClick()
+            },
+            modifier = modifier,
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (icon != null) {
+                    Icon(icon, contentDescription = label, modifier = Modifier.size(28.dp))
+                    Spacer(Modifier.height(4.dp))
+                }
+                Text(text = label, textAlign = TextAlign.Center)
+            }
+        }
     }
 }
 
@@ -350,6 +260,7 @@ private val ControlMode.labelRes: Int
         ControlMode.Trackpad -> R.string.mode_trackpad
         ControlMode.Keyboard -> R.string.mode_keyboard
         ControlMode.Mouse -> R.string.mode_mouse
+        ControlMode.Scroll -> R.string.mode_scroll
         ControlMode.Presentation -> R.string.mode_presentation
         ControlMode.Media -> R.string.mode_media
         ControlMode.Gamepad -> R.string.mode_gamepad

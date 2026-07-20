@@ -60,7 +60,12 @@ class TouchpadViewModel @Inject constructor(
 
     private var pendingDx = 0f
     private var pendingDy = 0f
+    private var pendingScrollDx = 0f
+    private var pendingScrollDy = 0f
     private var flushJob: Job? = null
+
+    /** Pixel → wheel units. Remainder is kept so tiny moves still accumulate. */
+    private val scrollScale = 2.5f
 
     init {
         AppLogger.i("Touchpad", "Screen opened")
@@ -165,12 +170,16 @@ class TouchpadViewModel @Inject constructor(
     }
 
     fun onScroll(dx: Float, dy: Float) {
-        AppLogger.d("Input", "scroll dx=$dx dy=$dy")
+        pendingScrollDx += dx * scrollScale
+        pendingScrollDy += dy * scrollScale
+        val sx = pendingScrollDx.toInt()
+        val sy = pendingScrollDy.toInt()
+        if (sx == 0 && sy == 0) return
+        pendingScrollDx -= sx
+        pendingScrollDy -= sy
+        AppLogger.d("Input", "scroll dx=$sx dy=$sy")
         viewModelScope.launch {
-            sendInputUseCase.sendScroll(
-                (dx * 0.5f).toInt(),
-                (dy * 0.5f).toInt()
-            )
+            sendInputUseCase.sendScroll(sx, sy)
         }
     }
 
@@ -189,6 +198,20 @@ class TouchpadViewModel @Inject constructor(
     fun onMiddleClick() {
         AppLogger.d("Input", "middle click")
         sendClick("middle")
+    }
+
+    fun onMouseDown(button: String) {
+        AppLogger.d("Input", "mouse down: $button")
+        viewModelScope.launch {
+            sendInputUseCase.sendEvent(InputEvent.Click(button, action = "down"))
+        }
+    }
+
+    fun onMouseUp(button: String) {
+        AppLogger.d("Input", "mouse up: $button")
+        viewModelScope.launch {
+            sendInputUseCase.sendEvent(InputEvent.Click(button, action = "up"))
+        }
     }
 
     fun onTextInput(text: String) {

@@ -10,17 +10,21 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import org.json.JSONObject
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.Inet4Address
 import java.net.InetAddress
+import java.net.NetworkInterface
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class UdpDiscoveryClient @Inject constructor() : DiscoveryRepository {
 
+    @Volatile
     private var running = false
 
     override fun discover(): Flow<List<DiscoveredDesktop>> = flow {
@@ -29,17 +33,28 @@ class UdpDiscoveryClient @Inject constructor() : DiscoveryRepository {
 
         while (currentCoroutineContext().isActive && running) {
             try {
-                AppLogger.d("Discovery", "Sending UDP broadcast on port ${ProtocolConstants.DISCOVERY_PORT}")
                 DatagramSocket().use { socket ->
                     socket.broadcast = true
-                    val request = ProtocolCodec.discoverRequest().toByteArray()
-                    val packet = DatagramPacket(
-                        request, request.size,
-                        InetAddress.getByName("255.255.255.255"),
-                        ProtocolConstants.DISCOVERY_PORT
-                    )
                     socket.soTimeout = 1500
-                    socket.send(packet)
+                    val request = ProtocolCodec.discoverRequest().toByteArray()
+                    val targets = broadcastTargets()
+                    AppLogger.d(
+                        "Discovery",
+                        "Sending UDP discover on port ${ProtocolConstants.DISCOVERY_PORT} → $targets"
+                    )
+                    for (target in targets) {
+                        try {
+                            socket.send(
+                                DatagramPacket(
+                                    request, request.size,
+                                    target,
+                                    ProtocolConstants.DISCOVERY_PORT
+                                )
+                            )
+                        } catch (e: Exception) {
+                            AppLogger.w("Discovery", "Send to $target failed: ${e.message}")
+                        }
+                    }
 
                     val buf = ByteArray(1024)
                     val deadline = System.currentTimeMillis() + 1500
@@ -49,7 +64,10 @@ class UdpDiscoveryClient @Inject constructor() : DiscoveryRepository {
                             socket.receive(reply)
                             val desktop = parseAnnounce(String(reply.data, 0, reply.length))
                             if (desktop != null) {
-                                AppLogger.i("Discovery", "Found: ${desktop.name} @ ${desktop.host}:${desktop.port}")
+                                AppLogger.i(
+                                    "Discovery",
+                                    "Found: ${desktop.name} @ ${desktop.host}:${desktop.port}"
+                                )
                                 found[desktop.host] = desktop
                             }
                         } catch (_: Exception) {
@@ -64,10 +82,34 @@ class UdpDiscoveryClient @Inject constructor() : DiscoveryRepository {
             emit(found.values.toList())
             delay(2000)
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     override fun stopDiscovery() {
         running = false
+    }
+
+    /**
+     * Broadcast on every up IPv4 interface (Wi‑Fi, USB tether/RNDIS, etc.).
+     * Global 255.255.255.255 often leaves via Wi‑Fi only and misses the USB tether PC.
+     */
+    private fun broadcastTargets(): List<InetAddress> {
+        val targets = linkedSetOf<InetAddress>()
+        try {
+            val interfaces = NetworkInterface.getNetworkInterfaces() ?: return listOf(
+                InetAddress.getByName("255.255.255.255")
+            )
+            for (nif in interfaces) {
+                if (!nif.isUp || nif.isLoopback) continue
+                for (addr in nif.interfaceAddresses) {
+                    val bcast = addr.broadcast ?: continue
+                    if (bcast is Inet4Address) targets.add(bcast)
+                }
+            }
+        } catch (e: Exception) {
+            AppLogger.w("Discovery", "Interface scan failed: ${e.message}")
+        }
+        targets.add(InetAddress.getByName("255.255.255.255"))
+        return targets.toList()
     }
 
     private fun parseAnnounce(json: String): DiscoveredDesktop? {
@@ -79,7 +121,8 @@ class UdpDiscoveryClient @Inject constructor() : DiscoveryRepository {
                 name = obj.getString("name"),
                 host = obj.getString("host"),
                 port = obj.getInt("port"),
-                requiresPin = obj.optBoolean("requiresPin", true)
+                requiresPin = obj.optBoolean("requiresPin", true),
+                link = obj.optString("link", "")
             )
         } catch (_: Exception) {
             null

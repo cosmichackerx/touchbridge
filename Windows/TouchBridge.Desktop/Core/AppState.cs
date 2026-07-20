@@ -8,6 +8,7 @@ public enum ControlMode
     Trackpad,
     Keyboard,
     Mouse,
+    Scroll,
     Presentation,
     Media,
     Gamepad
@@ -71,6 +72,17 @@ public enum ConnectionStatus
     Error
 }
 
+/// <summary>
+/// How the phone should reach the PC.
+/// <see cref="Online"/> = Wi‑Fi / LAN / ngrok.
+/// <see cref="Offline"/> = USB tether only (fastest local path).
+/// </summary>
+public enum NetworkLinkMode
+{
+    Online,
+    Offline
+}
+
 public sealed class AppState
 {
     public string DeviceName { get; set; } = Environment.MachineName;
@@ -78,6 +90,7 @@ public sealed class AppState
     public ConnectionStatus Status { get; set; } = ConnectionStatus.Waiting;
     public ControlMode ActiveMode { get; set; } = ControlMode.Trackpad;
     public KeyboardTheme ActiveKeyboardTheme { get; set; } = KeyboardTheme.Dark;
+    public NetworkLinkMode LinkMode { get; set; } = NetworkLinkMode.Online;
     public string PairingPin { get; private set; } = GeneratePin();
 
     /// <summary>
@@ -88,6 +101,13 @@ public sealed class AppState
     public bool ShowPin { get; set; } = true;
     public string? RemoteTunnelUrl { get; set; }
     public string RemoteTunnelStatus { get; set; } = "Remote off";
+
+    /// <summary>USB tether IPv4 when Offline mode is active (null if cable/tether not ready).</summary>
+    public string? UsbEndpointIp { get; set; }
+
+    /// <summary>Short hint shown on the bar for the active link mode.</summary>
+    public string LinkHint { get; set; } = "";
+
     public float PointerSensitivity { get; set; } = 1.0f;
     public bool NaturalScroll { get; set; }
 
@@ -128,7 +148,10 @@ public sealed class AppState
                 pin = EffectiveSecret,
                 remoteUrl = RemoteTunnelUrl,
                 remoteStatus = RemoteTunnelStatus,
-                status = Status.ToString()
+                status = Status.ToString(),
+                linkMode = LinkMode.ToString().ToLowerInvariant(),
+                usbIp = UsbEndpointIp,
+                linkHint = LinkHint
             };
             File.WriteAllText(
                 Path.Combine(dir, "status.json"),

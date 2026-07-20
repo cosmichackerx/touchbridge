@@ -195,8 +195,13 @@ private fun DesktopCard(
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                val linkLabel = when (desktop.link.lowercase()) {
+                    "usb" -> stringResource(R.string.connect_link_usb)
+                    "lan" -> stringResource(R.string.connect_link_lan)
+                    else -> null
+                }
                 Text(
-                    text = desktop.host,
+                    text = if (linkLabel != null) "${desktop.host} · $linkLabel" else desktop.host,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary
                 )

@@ -176,6 +176,7 @@ public sealed class InputInjector
         {
             "keyboard" => ControlMode.Keyboard,
             "mouse" => ControlMode.Mouse,
+            "scroll" => ControlMode.Scroll,
             "presentation" => ControlMode.Presentation,
             "media" => ControlMode.Media,
             "gamepad" => ControlMode.Gamepad,
@@ -204,10 +205,30 @@ public sealed class InputInjector
 
     private void Scroll(int dx, int dy)
     {
+        // Wheel delta must go in mouseData — NOT dx/dy (those are for pointer move).
         if (dy != 0)
-            SendMouse(NativeMethods.MouseeventfWheel, 0, dy);
+            SendMouseWheel(NativeMethods.MouseeventfWheel, dy);
         if (dx != 0)
-            SendMouse(NativeMethods.MouseeventfHwheel, dx, 0);
+            SendMouseWheel(NativeMethods.MouseeventfHwheel, dx);
+    }
+
+    private static void SendMouseWheel(uint flags, int delta)
+    {
+        var input = new NativeMethods.INPUT
+        {
+            type = NativeMethods.InputMouse,
+            U = new NativeMethods.InputUnion
+            {
+                mi = new NativeMethods.MOUSEINPUT
+                {
+                    dx = 0,
+                    dy = 0,
+                    mouseData = unchecked((uint)delta),
+                    dwFlags = flags
+                }
+            }
+        };
+        NativeMethods.SendInput(1, [input], Marshal.SizeOf<NativeMethods.INPUT>());
     }
 
     private void Enqueue(Action action) => _queue.Enqueue(action);

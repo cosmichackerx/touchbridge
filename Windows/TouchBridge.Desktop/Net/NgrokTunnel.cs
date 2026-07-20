@@ -36,6 +36,15 @@ public sealed class NgrokTunnel : IDisposable
 
     public void Start()
     {
+        // No domain configured → skip tunnel; phone should connect on the local network.
+        if (string.IsNullOrWhiteSpace(_domain))
+        {
+            _state.RemoteTunnelUrl = null;
+            _state.RemoteTunnelStatus = "Remote off (no domain)";
+            _state.NotifyChanged();
+            return;
+        }
+
         var ngrokPath = FindNgrokExecutable();
         if (ngrokPath is null)
         {
@@ -47,10 +56,8 @@ public sealed class NgrokTunnel : IDisposable
 
         try
         {
-            // A fixed domain (free static or custom) keeps the URL permanent across restarts.
-            var domainArg = string.IsNullOrWhiteSpace(_domain)
-                ? ""
-                : $" --url={_domain.Trim()}";
+            // Fixed domain keeps the URL permanent across restarts.
+            var domainArg = $" --url={_domain.Trim()}";
             var startInfo = new ProcessStartInfo
             {
                 FileName = ngrokPath,

@@ -9,9 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,7 +67,6 @@ import com.touchbridge.mobile.domain.model.ConnectionState
 import com.touchbridge.mobile.domain.model.ControlMode
 import com.touchbridge.mobile.presentation.common.DebugLogPanel
 import kotlinx.coroutines.delay
-import kotlin.math.abs
 
 @Composable
 fun TouchpadScreen(
@@ -191,10 +187,6 @@ fun TouchpadScreen(
                     onTap = {
                         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                         viewModel.onTap()
-                    },
-                    onRightClick = {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                        viewModel.onRightClick()
                     }
                 )
                 ControlMode.Keyboard -> KeyboardPanel(
@@ -207,15 +199,19 @@ fun TouchpadScreen(
                     onPointerMove = viewModel::onPointerMove,
                     onScroll = viewModel::onScroll,
                     onTap = viewModel::onTap,
-                    onLeftClick = viewModel::onLeftClick,
-                    onMiddleClick = viewModel::onMiddleClick,
-                    onRightClick = viewModel::onRightClick
+                    onMouseDown = viewModel::onMouseDown,
+                    onMouseUp = viewModel::onMouseUp
                 )
-                ControlMode.Presentation -> PresentationPanel(onKey = viewModel::onPresentationKey)
+                ControlMode.Scroll -> ScrollPanel(onScroll = viewModel::onScroll)
+                ControlMode.Presentation -> PresentationPanel(onKey = viewModel::onKey)
                 ControlMode.Media -> MediaPanel(onMedia = viewModel::onMediaKey)
                 ControlMode.Gamepad -> GamepadPanel(
+                    onKey = viewModel::onKey,
                     onKeyDown = viewModel::onKeyDown,
-                    onKeyUp = viewModel::onKeyUp
+                    onKeyUp = viewModel::onKeyUp,
+                    onPointerMove = viewModel::onPointerMove,
+                    onMouseDown = viewModel::onMouseDown,
+                    onMouseUp = viewModel::onMouseUp
                 )
             }
         }
@@ -231,18 +227,8 @@ fun TouchpadScreen(
 
         if (uiState.mode == ControlMode.Trackpad) {
             BottomBar(
-                onLeftClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    viewModel.onLeftClick()
-                },
-                onMiddleClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    viewModel.onMiddleClick()
-                },
-                onRightClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                    viewModel.onRightClick()
-                },
+                onMouseDown = viewModel::onMouseDown,
+                onMouseUp = viewModel::onMouseUp,
                 onKeyboardToggle = {
                     showKeyboard = !showKeyboard
                 }
@@ -299,60 +285,19 @@ private fun TrackpadSurface(
     onScroll: (Float, Float) -> Unit,
     onPointerMove: (Float, Float) -> Unit,
     onTap: () -> Unit,
-    onRightClick: () -> Unit,
     modifier: Modifier = Modifier,
     screenBitmap: ImageBitmap? = null
 ) {
-    val view = LocalView.current
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
             .pointerInput(Unit) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    var lastX = down.position.x
-                    var lastY = down.position.y
-                    var moved = false
-
-                    do {
-                        val event = awaitPointerEvent()
-                        val pressed = event.changes.filter { it.pressed }
-
-                        when {
-                            pressed.size >= 2 -> {
-                                moved = true
-                                val c = pressed[0]
-                                val sdx = c.position.x - lastX
-                                val sdy = c.position.y - lastY
-                                onScroll(sdx, sdy)
-                                lastX = c.position.x
-                                lastY = c.position.y
-                            }
-                            pressed.size == 1 -> {
-                                val c = pressed[0]
-                                val dx = c.position.x - lastX
-                                val dy = c.position.y - lastY
-                                if (abs(dx) > 1f || abs(dy) > 1f) {
-                                    moved = true
-                                    onPointerMove(dx, dy)
-                                }
-                                lastX = c.position.x
-                                lastY = c.position.y
-                            }
-                        }
-                    } while (event.changes.any { it.pressed })
-
-                    if (!moved) onTap()
-                }
-            }
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onDoubleTap = { onRightClick() },
-                    onLongPress = {
-                        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                        onRightClick()
-                    }
+                // Two fingers = scroll only. Right-click is via the R button — not gestures.
+                detectLaptopTrackpadGestures(
+                    onPointerMove = onPointerMove,
+                    onScroll = onScroll,
+                    onTap = onTap
                 )
             }
     ) {
@@ -463,9 +408,8 @@ private fun TopBar(
 
 @Composable
 private fun BottomBar(
-    onLeftClick: () -> Unit,
-    onMiddleClick: () -> Unit,
-    onRightClick: () -> Unit,
+    onMouseDown: (String) -> Unit,
+    onMouseUp: (String) -> Unit,
     onKeyboardToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -482,9 +426,21 @@ private fun BottomBar(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            MouseButton(label = stringResource(R.string.touchpad_left), onClick = onLeftClick)
-            MouseButton(label = stringResource(R.string.touchpad_middle), onClick = onMiddleClick)
-            MouseButton(label = stringResource(R.string.touchpad_right), onClick = onRightClick)
+            MouseButton(
+                label = stringResource(R.string.touchpad_left),
+                onPress = { onMouseDown("left") },
+                onRelease = { onMouseUp("left") }
+            )
+            MouseButton(
+                label = stringResource(R.string.touchpad_middle),
+                onPress = { onMouseDown("middle") },
+                onRelease = { onMouseUp("middle") }
+            )
+            MouseButton(
+                label = stringResource(R.string.touchpad_right),
+                onPress = { onMouseDown("right") },
+                onRelease = { onMouseUp("right") }
+            )
             IconButton(onClick = onKeyboardToggle) {
                 Icon(
                     Icons.Default.Keyboard,
@@ -499,18 +455,19 @@ private fun BottomBar(
 @Composable
 private fun MouseButton(
     label: String,
-    onClick: () -> Unit,
+    onPress: () -> Unit,
+    onRelease: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    TextButton(
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp)
+    HoldPressSurface(
+        onPress = onPress,
+        onRelease = onRelease,
+        modifier = modifier.padding(horizontal = 4.dp)
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurface
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -36,7 +37,9 @@ import javax.inject.Singleton
 class OkHttpWebSocketClient @Inject constructor() : ConnectionRepository {
 
     private val client = OkHttpClient.Builder()
+        .connectTimeout(8, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS)
+        .writeTimeout(8, TimeUnit.SECONDS)
         .pingInterval(0, TimeUnit.SECONDS)
         .build()
 
@@ -65,14 +68,16 @@ class OkHttpWebSocketClient @Inject constructor() : ConnectionRepository {
         webSocketUrl: String,
         pin: String?,
         deviceName: String
-    ): Result<Unit> {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
         _connectionInfo.value = ConnectionInfo(ConnectionState.Connecting)
         AppLogger.i("WebSocket", "Connecting to $webSocketUrl")
 
         password = pin ?: ""
         sessionKey = null
+        webSocket?.cancel()
+        webSocket = null
 
-        return try {
+        try {
             val requestBuilder = Request.Builder().url(webSocketUrl)
             if (webSocketUrl.contains("ngrok", ignoreCase = true)) {
                 requestBuilder.addHeader("ngrok-skip-browser-warning", "true")
@@ -189,13 +194,27 @@ class OkHttpWebSocketClient @Inject constructor() : ConnectionRepository {
                 }
             })
 
-            latch.await(10, TimeUnit.SECONDS)
+            // Must not block the UI thread — this is why we wrap the whole connect in IO.
+            latch.await(12, TimeUnit.SECONDS)
 
             if (connected) Result.success(Unit)
-            else Result.failure(Exception(connectError ?: "timeout"))
+            else {
+                webSocket?.cancel()
+                webSocket = null
+                val err = connectError ?: "Timed out connecting to $webSocketUrl"
+                AppLogger.e("WebSocket", err)
+                _connectionInfo.value = ConnectionInfo(
+                    ConnectionState.Error,
+                    errorMessage = err
+                )
+                Result.failure(Exception(err))
+            }
         } catch (e: Exception) {
-            AppLogger.e("WebSocket", "Connect exception", e)
-            _connectionInfo.value = ConnectionInfo(ConnectionState.Error, errorMessage = e.message)
+            AppLogger.e("WebSocket", "Connect threw", e)
+            _connectionInfo.value = ConnectionInfo(
+                ConnectionState.Error,
+                errorMessage = e.message
+            )
             Result.failure(e)
         }
     }

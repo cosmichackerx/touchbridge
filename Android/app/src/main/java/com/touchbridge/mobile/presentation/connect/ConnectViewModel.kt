@@ -41,8 +41,9 @@ class ConnectViewModel @Inject constructor(
         AppLogger.i("Connect", "Starting desktop discovery")
         viewModelScope.launch {
             discoverUseCase().collect { desktops ->
-                AppLogger.d("Connect", "Found ${desktops.size} desktop(s): ${desktops.map { it.name }}")
-                _uiState.update { it.copy(desktops = desktops, isDiscovering = true) }
+                val ordered = desktops.sortedByDescending { it.link.equals("usb", ignoreCase = true) }
+                AppLogger.d("Connect", "Found ${ordered.size} desktop(s): ${ordered.map { it.name }}")
+                _uiState.update { it.copy(desktops = ordered, isDiscovering = true) }
             }
         }
     }
